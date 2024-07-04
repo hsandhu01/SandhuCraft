@@ -1,6 +1,4 @@
 import random
-import pyglet
-from pyglet.gl import *
 
 class WeatherSystem:
     def __init__(self, window):
@@ -11,10 +9,6 @@ class WeatherSystem:
         self.change_weather()
         self.weather_duration = random.uniform(60, 300)  # Weather lasts between 1-5 minutes
         self.time_elapsed = 0
-        
-        # Load textures
-        self.rain_texture = pyglet.image.load('textures/rain.png').get_texture()
-        self.snow_texture = pyglet.image.load('textures/snow.png').get_texture()
 
     def update(self, dt):
         self.time_elapsed += dt
@@ -50,23 +44,10 @@ class WeatherSystem:
             particle.update(dt)
 
     def draw(self):
+        # Simplified drawing without textures
         if self.weather_type != 'clear':
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glEnable(GL_TEXTURE_2D)
-            
-            if self.weather_type == 'rain':
-                glBindTexture(GL_TEXTURE_2D, self.rain_texture.id)
-            elif self.weather_type == 'snow':
-                glBindTexture(GL_TEXTURE_2D, self.snow_texture.id)
-            
-            glPushMatrix()
             for particle in self.particles:
                 particle.draw(self.weather_type)
-            glPopMatrix()
-            
-            glDisable(GL_TEXTURE_2D)
-            glDisable(GL_BLEND)
 
     def get_weather_type(self):
         return self.weather_type
@@ -88,20 +69,8 @@ class WeatherParticle:
             self.y = 20  # Reset height when particle reaches the ground
 
     def draw(self, weather_type):
-        glPushMatrix()
-        glTranslatef(self.x, self.y, self.z)
-        
-        if weather_type == 'rain':
-            glRotatef(-60, 1, 0, 0)  # Tilt rain particles
-        
-        glBegin(GL_QUADS)
-        glTexCoord2f(0, 0); glVertex3f(-self.size, -self.size, 0)
-        glTexCoord2f(1, 0); glVertex3f(self.size, -self.size, 0)
-        glTexCoord2f(1, 1); glVertex3f(self.size, self.size, 0)
-        glTexCoord2f(0, 1); glVertex3f(-self.size, self.size, 0)
-        glEnd()
-        
-        glPopMatrix()
+        # Simplified drawing without OpenGL
+        pass
 
 class WeatherEffects:
     def __init__(self, sound_manager):

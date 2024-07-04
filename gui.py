@@ -26,6 +26,10 @@ class GUI:
             if btn.hit_test(x, y):
                 btn.callback()
 
+    def update(self, player, time_of_day):
+        # Update GUI elements if needed
+        pass
+
 class Button:
     def __init__(self, text, x, y, width, height, callback, batch):
         self.x, self.y, self.width, self.height = x, y, width, height

@@ -1,15 +1,14 @@
-from pyglet.window import key
 from pyglet.math import Vec3
+from pyglet.window import key
 import math
 from inventory import Inventory
 from crafting import CraftingSystem
 
 class Player:
-    def __init__(self, position, world):
-        self.position = Vec3(*position)
-        self.rotation = Vec3(0, 0, 0)
+    def __init__(self, position):
+        self.position = position if isinstance(position, Vec3) else Vec3(*position)
+        self.rotation = Vec3(0.0, 0.0, 0.0)
         self.speed = 5
-        self.world = world
         self.gravity = -9.8
         self.dy = 0
         self.jump_speed = 5
@@ -29,7 +28,7 @@ class Player:
         self.crouching = False
         self.crouch_multiplier = 0.5
 
-    def update(self, dt, keys):
+    def update(self, dt, keys, world):
         # Apply gravity if not flying
         if not self.flying:
             self.dy += self.gravity * dt
@@ -42,7 +41,7 @@ class Player:
                 new_y -= self.speed * dt
 
         # Update position
-        self.move(dt, keys, new_y)
+        self.move(dt, keys, new_y, world)
 
         # Update cooldowns
         self.mining_cooldown = max(0, self.mining_cooldown - dt)
@@ -52,7 +51,7 @@ class Player:
         # Update hunger
         self.update_hunger(dt)
 
-    def move(self, dt, keys, new_y):
+    def move(self, dt, keys, new_y, world):
         speed = self.speed
         if keys[key.LSHIFT] and not self.flying:
             self.crouching = True
@@ -76,16 +75,16 @@ class Player:
         new_x = self.position.x + dx
         new_z = self.position.z + dz
 
-        if not self.world.collide((new_x, self.position.y, self.position.z)):
+        if not world.collide((new_x, self.position.y, self.position.z)):
             self.position.x = new_x
-        if not self.world.collide((self.position.x, new_y, self.position.z)):
+        if not world.collide((self.position.x, new_y, self.position.z)):
             self.position.y = new_y
             self.jumped = False
         else:
             self.position.y = math.ceil(self.position.y - 0.5)
             self.dy = 0
             self.jumped = False
-        if not self.world.collide((self.position.x, self.position.y, new_z)):
+        if not world.collide((self.position.x, self.position.y, new_z)):
             self.position.z = new_z
 
         # Handle jumping
@@ -101,9 +100,8 @@ class Player:
     def mouse_motion(self, dx, dy):
         dx /= 8
         dy /= 8
-        self.rotation.x -= dy
+        self.rotation.x = max(-90, min(90, self.rotation.x - dy))
         self.rotation.y += dx
-        self.rotation.x = max(-90, min(90, self.rotation.x))
 
     def get_sight_vector(self):
         rotX, rotY = self.rotation.x, self.rotation.y
@@ -113,14 +111,14 @@ class Player:
         dz = math.sin(math.radians(rotY - 90)) * m
         return (dx, dy, dz)
 
-    def get_targeted_block(self, max_distance=8):
+    def get_targeted_block(self, world, max_distance=8):
         m = 8
         x, y, z = self.position
         dx, dy, dz = self.get_sight_vector()
         previous = None
         for _ in range(max_distance * m):
             key = (int(x), int(y), int(z))
-            if key != previous and self.world.get_block(key):
+            if key != previous and world.get_block(key):
                 return key, previous
             previous = key
             x, y, z = x + dx / m, y + dy / m, z + dz / m
@@ -128,26 +126,23 @@ class Player:
 
     def mine(self, world):
         if self.mining_cooldown <= 0:
-            target, _ = self.get_targeted_block()
+            target, _ = self.get_targeted_block(world)
             if target:
                 block = world.get_block(target)
                 if block:
-                    self.inventory.add_item(block.block_type)
+                    self.inventory.add_item(block)
                     world.remove_block(target)
                     self.mining_cooldown = 0.3
                     return block
         return None
 
-    def place_block(self):
+    def place_block(self, block_type, world):
         if self.attack_cooldown <= 0:
-            target, previous = self.get_targeted_block()
+            target, previous = self.get_targeted_block(world)
             if previous:
-                selected_item = self.inventory.get_selected_item()
-                if selected_item and selected_item[0] in self.world.block_types:
-                    self.world.add_block(previous, selected_item[0])
-                    self.inventory.remove_item(selected_item[0])
-                    self.attack_cooldown = 0.3
-                    return True
+                world.add_block(previous, block_type)
+                self.attack_cooldown = 0.3
+                return True
         return False
 
     def attack(self, mobs):
@@ -180,7 +175,7 @@ class Player:
 
     def die(self):
         # Implement death behavior (e.g., respawn, drop items)
-        self.position = Vec3(0, 20, 0)  # Respawn at a default position
+        self.position = Vec3(0, 20.0, 0)  # Respawn at a default position
         self.health = self.max_health
         self.hunger = self.max_hunger
 
@@ -196,12 +191,14 @@ class Player:
         return self.crafting_system.craft(recipe, self.inventory)
 
     def update_camera(self):
-        glRotatef(-self.rotation.x, 1, 0, 0)
-        glRotatef(-self.rotation.y, 0, 1, 0)
-        glTranslatef(-self.position.x, -self.position.y, -self.position.z)
+        # This method is left empty as we're not using actual rendering
+        pass
 
     def get_position(self):
         return self.position
 
     def get_rotation(self):
         return self.rotation
+
+    def reset_speed(self):
+        self.speed = 5  # Reset to default speed

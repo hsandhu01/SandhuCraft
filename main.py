@@ -7,6 +7,7 @@ from pyglet.math import Vec3
 from pyglet.graphics import Batch
 from pyglet.text import Label
 import traceback
+import sys
 
 pyglet.options['shadow_window'] = False
 
@@ -21,13 +22,24 @@ from weather import WeatherSystem
 class Game(pyglet.window.Window):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Print debug information
+        version = gl.glGetString(gl.GL_VERSION)
+        if isinstance(version, bytes):
+            print(f"OpenGL Version: {version.decode()}")
+        else:
+            print(f"OpenGL Version: {version}")
+        print(f"Pyglet version: {pyglet.version}")
+        print(f"Python version: {sys.version}")
+        
         self.set_minimum_size(300, 200)
         self.keys = key.KeyStateHandler()
         self.push_handlers(self.keys)
         self.exclusive = False
         self.set_exclusive_mouse(self.exclusive)
         self.world = GameWorld()
-        self.player = Player(Vec3(0.5, 20.0, 0.5))
+        self.player = Player(Vec3(0.5, 50.0, 0.5))  # Increased Y value
+        self.player.position[1] = self.world.get_height(self.player.position[0], self.player.position[2]) + 2
         self.gui = GUI(self)
         self.mobs = []
         self.weather_system = WeatherSystem(self)
@@ -39,6 +51,12 @@ class Game(pyglet.window.Window):
         self.info_label = Label('', x=10, y=self.height - 10, batch=self.batch)
 
         self.spawn_mobs()
+
+        # Set up OpenGL context
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glEnable(gl.GL_CULL_FACE)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
 
     def spawn_mobs(self):
         for _ in range(20):  # Spawn 20 sheep
@@ -95,46 +113,54 @@ class Game(pyglet.window.Window):
                 self.player.take_damage(5)  # Zombie attacks player
 
     def update_lighting(self):
-        # Simplified lighting update (no actual rendering)
         self.ambient_light = 0.2 + 0.6 * math.sin(self.time_of_day * math.pi)
 
     def on_draw(self):
-        try:
-            self.clear()
-            gl.glEnable(gl.GL_DEPTH_TEST)
-            gl.glViewport(0, 0, self.width, self.height)
-            
-            # Set up 3D projection
-            gl.glMatrixMode(gl.GL_PROJECTION)
-            gl.glLoadIdentity()
-            gl.gluPerspective(65, self.width / self.height, 0.1, 1000)
-            
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glLoadIdentity()
-
-            # Update the player's camera
-            self.player.update_camera(self)
-
-            # Draw the game world
-            self.world.draw()
-
-            # Draw the player and other objects
-            self.player.draw()
-            for mob in self.mobs:
-                mob.draw()
-
-            # Draw the GUI elements
-            self.set_2d()
-            self.batch.draw()
-            self.fps_display.draw()
-            self.draw_player_info()
-        except Exception as e:
-            print(f"Error in on_draw: {e}")
-            traceback.print_exc()
-            pyglet.app.exit()
+        self.clear()
+        gl.glClearColor(0.5, 0.7, 1.0, 1.0)  # Light blue sky color
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glViewport(0, 0, self.width, self.height)
+        
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.gluPerspective(65, self.width / self.height, 0.1, 1000)
+        
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+        
+        self.player.update_camera(self)
+        
+        gl.glEnable(gl.GL_LIGHTING)
+        gl.glEnable(gl.GL_LIGHT0)
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (gl.GLfloat * 4)(0, 1, 0, 0))
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, (gl.GLfloat * 4)(self.ambient_light, self.ambient_light, self.ambient_light, 1))
+        
+        self.world.draw()
+        
+        # Debug cube
+        gl.glColor3f(1, 0, 0)  # Red color
+        gl.glBegin(gl.GL_QUADS)
+        gl.glVertex3f(0, 0, 0)
+        gl.glVertex3f(1, 0, 0)
+        gl.glVertex3f(1, 1, 0)
+        gl.glVertex3f(0, 1, 0)
+        gl.glEnd()
+        
+        gl.glDisable(gl.GL_LIGHTING)
+        
+        for mob in self.mobs:
+            mob.draw()
+        
+        self.set_2d()
+        self.batch.draw()
+        self.fps_display.draw()
+        self.draw_player_info()
 
     def set_2d(self):
         width, height = self.get_size()
+        gl.glDisable(gl.GL_DEPTH_TEST)
         gl.glViewport(0, 0, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()

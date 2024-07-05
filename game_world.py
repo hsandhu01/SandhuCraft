@@ -2,14 +2,17 @@ import random
 import pyglet
 import noise
 from pyglet import gl
+import os
+from PIL import Image
 
 class Block:
     def __init__(self, block_type):
         self.block_type = block_type
 
 class Chunk:
-    def __init__(self, position):
+    def __init__(self, position, world):
         self.position = position
+        self.world = world
         self.blocks = {}
         self.batch = pyglet.graphics.Batch()
         self.needs_update = True
@@ -40,13 +43,19 @@ class Chunk:
             return
         self.batch = pyglet.graphics.Batch()
         for (x, y, z), block in self.blocks.items():
-            # Simple cube rendering for each block
+            color = self.world.textures[block.block_type]
             vertices = [
                 x, y, z,    x+1, y, z,    x+1, y+1, z,    x, y+1, z,  # Front face
                 x, y, z+1,  x+1, y, z+1,  x+1, y+1, z+1,  x, y+1, z+1,  # Back face
+                x, y, z,    x, y, z+1,    x, y+1, z+1,    x, y+1, z,  # Left face
+                x+1, y, z,  x+1, y+1, z,  x+1, y+1, z+1,  x+1, y, z+1,  # Right face
+                x, y+1, z,  x+1, y+1, z,  x+1, y+1, z+1,  x, y+1, z+1,  # Top face
+                x, y, z,    x+1, y, z,    x+1, y, z+1,    x, y, z+1,  # Bottom face
             ]
-            self.batch.add(4, gl.GL_QUADS, None, ('v3f', vertices[:12]))
-            self.batch.add(4, gl.GL_QUADS, None, ('v3f', vertices[12:]))
+            colors = color * 24  # 6 faces * 4 vertices per face
+            self.batch.add(24, gl.GL_QUADS, None,
+                           ('v3f', vertices),
+                           ('c3f', colors))
         self.needs_update = False
 
     def draw(self):
@@ -58,12 +67,21 @@ class GameWorld:
         self.chunks = {}
         self.seed = random.randint(0, 9999999)
         self.fluid_queue = set()
+        self.load_textures()
         self.generate_world()
+
+    def load_textures(self):
+        self.textures = {
+            'grass': (0, 1, 0),  # Green
+            'dirt': (0.5, 0.25, 0),  # Brown
+            'stone': (0.5, 0.5, 0.5),  # Gray
+            'sand': (1, 1, 0)  # Yellow
+        }
 
     def generate_world(self):
         for cx in range(-4, 4):
             for cz in range(-4, 4):
-                self.chunks[(cx, cz)] = Chunk((cx, cz))
+                self.chunks[(cx, cz)] = Chunk((cx, cz), self)
                 for x in range(16):
                     for z in range(16):
                         world_x = cx * 16 + x
@@ -71,7 +89,8 @@ class GameWorld:
                         self.generate_terrain(world_x, world_z)
 
     def generate_terrain(self, world_x, world_z):
-        height = int(noise.pnoise2(world_x / 50, world_z / 50, octaves=6, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024, base=self.seed) * 15 + 20)
+        height = int(noise.pnoise2(world_x / 50, world_z / 50, octaves=6, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024, base=self.seed) * 30 + 35)
+        print(f"Generating terrain at ({world_x}, {world_z}) with height {height}")
         for y in range(height):
             if y == height - 1:
                 block_type = 'grass' if noise.pnoise2(world_x / 100, world_z / 100, octaves=3, base=self.seed) > 0 else 'sand'
@@ -84,7 +103,7 @@ class GameWorld:
     def add_block(self, position, block_type):
         chunk_pos = (position[0] // 16, position[2] // 16)
         if chunk_pos not in self.chunks:
-            self.chunks[chunk_pos] = Chunk(chunk_pos)
+            self.chunks[chunk_pos] = Chunk(chunk_pos, self)
         self.chunks[chunk_pos].add_block(position, block_type)
 
     def remove_block(self, position):
@@ -100,18 +119,29 @@ class GameWorld:
         return None
 
     def get_height(self, x, z):
-        # Find the highest non-air block at the given x, z coordinates
         for y in range(255, -1, -1):
             if self.get_block((int(x), y, int(z))) is not None:
                 return y
-        return 0  # Return 0 if no blocks found (void)
+        return 0
 
     def draw(self):
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glEnable(gl.GL_CULL_FACE)
+        gl.glEnable(gl.GL_LIGHTING)
+        gl.glEnable(gl.GL_LIGHT0)
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (gl.GLfloat * 4)(0, 1, 0, 0))
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, (gl.GLfloat * 4)(0.5, 0.5, 0.5, 1))
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, (gl.GLfloat * 4)(0.5, 0.5, 0.5, 1))
+
         for chunk in self.chunks.values():
             gl.glPushMatrix()
             gl.glTranslatef(chunk.position[0] * 16, 0, chunk.position[1] * 16)
             chunk.draw()
             gl.glPopMatrix()
+
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glDisable(gl.GL_CULL_FACE)
+        gl.glDisable(gl.GL_DEPTH_TEST)
 
     def update_fluids(self):
         # Simplified fluid update (no actual simulation)

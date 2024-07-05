@@ -1,3 +1,4 @@
+
 # Sandhucraft
 
 Sandhucraft is a Minecraft-inspired voxel-based sandbox game built with Python and Pyglet. Explore a procedurally generated world, mine resources, craft items, and build structures in this engaging 3D environment.
@@ -6,20 +7,20 @@ Sandhucraft is a Minecraft-inspired voxel-based sandbox game built with Python a
 
 ## Features
 
-- Procedurally generated 3D world
-- Day/night cycle
-- Weather system (rain, snow)
-- Basic crafting system
-- Resource gathering (mining)
-- Block placement and destruction
-- Simple mob AI (sheep and zombies)
-- Inventory management
-- Terrain features:
+- **Procedurally generated 3D world**
+- **Day/night cycle**
+- **Weather system** (rain, snow)
+- **Basic crafting system**
+- **Resource gathering** (mining)
+- **Block placement and destruction**
+- **Simple mob AI** (sheep and zombies)
+- **Inventory management**
+- **Terrain features:**
   - Trees
   - Caves
   - Ore deposits
   - Water bodies
-- Save/load game functionality
+- **Save/load game functionality**
 
 ## Requirements
 
@@ -30,28 +31,34 @@ Sandhucraft is a Minecraft-inspired voxel-based sandbox game built with Python a
 ## Installation
 
 1. Clone the repository:
-git clone https://github.com/hsandhu01/Sandhucraft.git
-cd Sandhucraft
-Copy
+    ```bash
+    git clone https://github.com/hsandhu01/Sandhucraft.git
+    cd Sandhucraft
+    ```
+
 2. Install the required packages:
-pip install pyglet noise
-Copy
+    ```bash
+    pip install pyglet noise
+    ```
+
 ## Running the Game
 
 To start Sandhucraft, run the following command in the project directory:
+```bash
 python main.py
-Copy
+```
+
 ## Controls
 
-- WASD: Move
-- Space: Jump
-- Left mouse button: Break blocks
-- Right mouse button: Place blocks
-- E: Toggle inventory
-- 1-5: Select hotbar items
-- ESC: Toggle mouse capture
-- F5: Save game
-- F9: Load game
+- **WASD**: Move
+- **Space**: Jump
+- **Left mouse button**: Break blocks
+- **Right mouse button**: Place blocks
+- **E**: Toggle inventory
+- **1-5**: Select hotbar items
+- **ESC**: Toggle mouse capture
+- **F5**: Save game
+- **F9**: Load game
 
 ## Project Structure
 

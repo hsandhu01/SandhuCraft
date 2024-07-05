@@ -38,7 +38,7 @@ class Game(pyglet.window.Window):
         self.exclusive = False
         self.set_exclusive_mouse(self.exclusive)
         self.world = GameWorld()
-        self.player = Player(Vec3(0.5, 50.0, 0.5))  # Increased Y value
+        self.player = Player(Vec3(0.5, 50.0, 0.5))
         self.player.position[1] = self.world.get_height(self.player.position[0], self.player.position[2]) + 2
         self.gui = GUI(self)
         self.mobs = []
@@ -132,23 +132,7 @@ class Game(pyglet.window.Window):
         
         self.player.update_camera(self)
         
-        gl.glEnable(gl.GL_LIGHTING)
-        gl.glEnable(gl.GL_LIGHT0)
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (gl.GLfloat * 4)(0, 1, 0, 0))
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, (gl.GLfloat * 4)(self.ambient_light, self.ambient_light, self.ambient_light, 1))
-        
         self.world.draw()
-        
-        # Debug cube
-        gl.glColor3f(1, 0, 0)  # Red color
-        gl.glBegin(gl.GL_QUADS)
-        gl.glVertex3f(0, 0, 0)
-        gl.glVertex3f(1, 0, 0)
-        gl.glVertex3f(1, 1, 0)
-        gl.glVertex3f(0, 1, 0)
-        gl.glEnd()
-        
-        gl.glDisable(gl.GL_LIGHTING)
         
         for mob in self.mobs:
             mob.draw()

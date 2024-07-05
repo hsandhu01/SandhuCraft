@@ -72,10 +72,10 @@ class GameWorld:
 
     def load_textures(self):
         self.textures = {
-            'grass': (0, 1, 0),  # Green
+            'grass': (0, 0.8, 0),  # Green
             'dirt': (0.5, 0.25, 0),  # Brown
             'stone': (0.5, 0.5, 0.5),  # Gray
-            'sand': (1, 1, 0)  # Yellow
+            'sand': (0.76, 0.7, 0.5)  # Yellow
         }
 
     def generate_world(self):
@@ -127,19 +127,21 @@ class GameWorld:
     def draw(self):
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glEnable(gl.GL_CULL_FACE)
-        gl.glEnable(gl.GL_LIGHTING)
-        gl.glEnable(gl.GL_LIGHT0)
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (gl.GLfloat * 4)(0, 1, 0, 0))
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, (gl.GLfloat * 4)(0.5, 0.5, 0.5, 1))
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, (gl.GLfloat * 4)(0.5, 0.5, 0.5, 1))
-
         for chunk in self.chunks.values():
             gl.glPushMatrix()
             gl.glTranslatef(chunk.position[0] * 16, 0, chunk.position[1] * 16)
             chunk.draw()
             gl.glPopMatrix()
+        
+        # Draw a debug ground plane
+        gl.glColor3f(0.5, 0.5, 0.5)  # Gray color
+        gl.glBegin(gl.GL_QUADS)
+        gl.glVertex3f(-100, 0, -100)
+        gl.glVertex3f(100, 0, -100)
+        gl.glVertex3f(100, 0, 100)
+        gl.glVertex3f(-100, 0, 100)
+        gl.glEnd()
 
-        gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_CULL_FACE)
         gl.glDisable(gl.GL_DEPTH_TEST)
 

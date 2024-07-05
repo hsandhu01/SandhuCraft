@@ -1,5 +1,5 @@
 import pyglet
-from pyglet.gl import *
+from pyglet.gl import GL_QUADS
 
 class GUI:
     def __init__(self, window):

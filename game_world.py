@@ -1,7 +1,7 @@
 import random
 import pyglet
 import noise
-from pyglet.gl import *
+from pyglet import gl
 
 class Block:
     def __init__(self, block_type):
@@ -11,21 +11,21 @@ class Chunk:
     def __init__(self, position):
         self.position = position
         self.blocks = {}
-        self.vertex_list = None
-        self.mesh = None
+        self.batch = pyglet.graphics.Batch()
+        self.needs_update = True
 
     def add_block(self, position, block_type):
         local_x, local_y, local_z = (p % 16 for p in position)
         if (local_x, local_y, local_z) not in self.blocks:
             self.blocks[(local_x, local_y, local_z)] = Block(block_type)
-            self.mesh = None  # Flag for mesh update
+            self.needs_update = True
 
     def remove_block(self, position):
         local_x, local_y, local_z = (p % 16 for p in position)
         if (local_x, local_y, local_z) in self.blocks:
             removed_type = self.blocks[(local_x, local_y, local_z)].block_type
             del self.blocks[(local_x, local_y, local_z)]
-            self.mesh = None  # Flag for mesh update
+            self.needs_update = True
             return removed_type
         return None
 
@@ -34,14 +34,24 @@ class Chunk:
         if (local_x, local_y, local_z) in self.blocks:
             return self.blocks[(local_x, local_y, local_z)].block_type
         return None
-
+    
     def update_mesh(self):
-        # Simplified mesh update (no actual rendering)
-        self.mesh = pyglet.graphics.Batch()
+        if not self.needs_update:
+            return
+        self.batch = pyglet.graphics.Batch()
+        for (x, y, z), block in self.blocks.items():
+            # Simple cube rendering for each block
+            vertices = [
+                x, y, z,    x+1, y, z,    x+1, y+1, z,    x, y+1, z,  # Front face
+                x, y, z+1,  x+1, y, z+1,  x+1, y+1, z+1,  x, y+1, z+1,  # Back face
+            ]
+            self.batch.add(4, gl.GL_QUADS, None, ('v3f', vertices[:12]))
+            self.batch.add(4, gl.GL_QUADS, None, ('v3f', vertices[12:]))
+        self.needs_update = False
 
     def draw(self):
-        # Simplified drawing (no actual rendering)
-        pass
+        self.update_mesh()
+        self.batch.draw()
 
 class GameWorld:
     def __init__(self):
@@ -97,8 +107,11 @@ class GameWorld:
         return 0  # Return 0 if no blocks found (void)
 
     def draw(self):
-        # Simplified drawing (no actual rendering)
-        pass
+        for chunk in self.chunks.values():
+            gl.glPushMatrix()
+            gl.glTranslatef(chunk.position[0] * 16, 0, chunk.position[1] * 16)
+            chunk.draw()
+            gl.glPopMatrix()
 
     def update_fluids(self):
         # Simplified fluid update (no actual simulation)

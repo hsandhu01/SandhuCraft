@@ -1,12 +1,13 @@
 from pyglet.math import Vec3
 from pyglet.window import key
+from pyglet import gl
 import math
 from inventory import Inventory
 from crafting import CraftingSystem
 
 class Player:
     def __init__(self, position):
-        self.position = position if isinstance(position, Vec3) else Vec3(*position)
+        self.position = list(position)  # Store as a list for mutability
         self.rotation = Vec3(0.0, 0.0, 0.0)
         self.speed = 5
         self.gravity = -9.8
@@ -32,9 +33,9 @@ class Player:
         # Apply gravity if not flying
         if not self.flying:
             self.dy += self.gravity * dt
-            new_y = self.position.y + self.dy * dt
+            new_y = self.position[1] + self.dy * dt
         else:
-            new_y = self.position.y
+            new_y = self.position[1]
             if keys[key.SPACE]:
                 new_y += self.speed * dt
             if keys[key.LSHIFT]:
@@ -72,20 +73,20 @@ class Player:
         dz = -strafe * math.sin(rotY) + forward * math.cos(rotY)
 
         # Check for collisions and update position
-        new_x = self.position.x + dx
-        new_z = self.position.z + dz
+        new_x = self.position[0] + dx
+        new_z = self.position[2] + dz
 
-        if not world.collide((new_x, self.position.y, self.position.z)):
-            self.position.x = new_x
-        if not world.collide((self.position.x, new_y, self.position.z)):
-            self.position.y = new_y
+        if not world.collide((new_x, self.position[1], self.position[2])):
+            self.position[0] = new_x
+        if not world.collide((self.position[0], new_y, self.position[2])):
+            self.position[1] = new_y
             self.jumped = False
         else:
-            self.position.y = math.ceil(self.position.y - 0.5)
+            self.position[1] = math.ceil(self.position[1] - 0.5)
             self.dy = 0
             self.jumped = False
-        if not world.collide((self.position.x, self.position.y, new_z)):
-            self.position.z = new_z
+        if not world.collide((self.position[0], self.position[1], new_z)):
+            self.position[2] = new_z
 
         # Handle jumping
         if keys[key.SPACE] and not self.jumped and not self.flying:
@@ -175,7 +176,7 @@ class Player:
 
     def die(self):
         # Implement death behavior (e.g., respawn, drop items)
-        self.position = Vec3(0, 20.0, 0)  # Respawn at a default position
+        self.position = [0, 20.0, 0]  # Respawn at a default position
         self.health = self.max_health
         self.hunger = self.max_hunger
 
@@ -190,15 +191,16 @@ class Player:
     def craft(self, recipe):
         return self.crafting_system.craft(recipe, self.inventory)
 
-    def update_camera(self):
-        # This method is left empty as we're not using actual rendering
+    def update_camera(self, window):
+        gl.glLoadIdentity()
+        gl.glRotatef(-self.rotation.x, 1, 0, 0)
+        gl.glRotatef(-self.rotation.y, 0, 1, 0)
+        gl.glTranslatef(-self.position[0], -self.position[1] - self.height, -self.position[2])
+
+    def draw(self):
+        # For now, we won't draw the player model
+        # This method can be expanded later to draw a player model or hand
         pass
 
     def get_position(self):
-        return self.position
-
-    def get_rotation(self):
-        return self.rotation
-
-    def reset_speed(self):
-        self.speed = 5  # Reset to default speed
+        return Vec3(*self.position)

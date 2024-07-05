@@ -42,6 +42,7 @@ class Chunk:
         if not self.needs_update:
             return
         self.batch = pyglet.graphics.Batch()
+        vertex_count = 0
         for (x, y, z), block in self.blocks.items():
             color = self.world.textures[block.block_type]
             vertices = [
@@ -53,14 +54,18 @@ class Chunk:
                 x, y, z,    x+1, y, z,    x+1, y, z+1,    x, y, z+1,  # Bottom face
             ]
             colors = color * 24  # 6 faces * 4 vertices per face
+            print(f"Block at ({x}, {y}, {z}) with vertices: {vertices}")
             self.batch.add(24, gl.GL_QUADS, None,
                            ('v3f', vertices),
                            ('c3f', colors))
+            vertex_count += 24
+        print(f"Updated chunk mesh at {self.position} with {vertex_count} vertices.")
         self.needs_update = False
 
     def draw(self):
         self.update_mesh()
         self.batch.draw()
+        print(f"Drew chunk at {self.position}")
 
 class GameWorld:
     def __init__(self):
@@ -127,6 +132,8 @@ class GameWorld:
     def draw(self):
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glEnable(gl.GL_CULL_FACE)
+        gl.glCullFace(gl.GL_BACK)
+        gl.glFrontFace(gl.GL_CCW)
         for chunk in self.chunks.values():
             gl.glPushMatrix()
             gl.glTranslatef(chunk.position[0] * 16, 0, chunk.position[1] * 16)
@@ -144,6 +151,7 @@ class GameWorld:
 
         gl.glDisable(gl.GL_CULL_FACE)
         gl.glDisable(gl.GL_DEPTH_TEST)
+        print("Drew game world")
 
     def update_fluids(self):
         # Simplified fluid update (no actual simulation)

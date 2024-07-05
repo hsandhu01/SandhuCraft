@@ -40,6 +40,7 @@ class Game(pyglet.window.Window):
         self.world = GameWorld()
         self.player = Player(Vec3(0.5, 50.0, 0.5))
         self.player.position[1] = self.world.get_height(self.player.position[0], self.player.position[2]) + 2
+        print(f"Player initial position: {self.player.position}")
         self.gui = GUI(self)
         self.mobs = []
         self.weather_system = WeatherSystem(self)

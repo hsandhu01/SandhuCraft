@@ -28,6 +28,7 @@ class Player:
         self.sprint_multiplier = 1.5
         self.crouching = False
         self.crouch_multiplier = 0.5
+        self.inventory_open = False
 
     def update(self, dt, keys, world):
         # Apply gravity if not flying
@@ -203,4 +204,4 @@ class Player:
         pass
 
     def get_position(self):
-        return Vec3(*self.position)
+        return self.position

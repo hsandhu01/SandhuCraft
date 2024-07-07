@@ -1,6 +1,9 @@
 import pyglet
 from pyglet import resource
 from pyglet import graphics
+import logging
+
+logging.basicConfig(level=logging.INFO)
 import os
 
 class Inventory:
@@ -9,21 +12,25 @@ class Inventory:
         self.hotbar_slots = 9  # First 9 slots are the hotbar
         self.selected_slot = 0
         
-        # Texture loading is commented out
-        # resource.path = [os.path.join(os.path.dirname(__file__), 'textures')]
-        # resource.reindex()
-        # self.textures = {}
-        # texture_names = [
-        #     'grass', 'dirt', 'stone', 'wood', 'leaves', 'sand', 'water', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore',
-        #     'wooden_planks', 'stick', 'wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'furnace', 'coal', 'iron_ingot',
-        #     'gold_ingot', 'diamond'
-        # ]
-        # for name in texture_names:
-        #     try:
-        #         self.textures[name] = resource.image(f'{name}.png').get_texture()
-        #         print(f"Successfully loaded texture in inventory: {name}")
-        #     except Exception as e:
-        #         print(f"Error loading texture in inventory {name}: {e}")
+        # Texture loading
+        resource.path = [os.path.join(os.path.dirname(__file__), 'textures')]
+        resource.reindex()
+        self.textures = {}
+        texture_names = [
+            'grass', 'dirt', 'stone', 'wood', 'leaves', 'sand', 'water', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore',
+            'wooden_planks', 'stick', 'wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'furnace', 'coal', 'iron_ingot',
+            'gold_ingot', 'diamond'
+        ]
+        for name in texture_names:
+            try:
+                texture = resource.image(f'{name}.png')
+                if texture:
+                    self.textures[name] = texture.get_texture()
+                    logging.info(f"Successfully loaded texture in inventory: {name}")
+                else:
+                    logging.warning(f"Failed to load texture in inventory: {name}")
+            except Exception as e:
+                logging.error(f"Error loading texture in inventory {name}: {e}")
 
     def add_item(self, item, amount=1):
         try:
@@ -84,9 +91,14 @@ class Inventory:
                 )
             if self.slots[i]:
                 item, count = self.slots[i]
-                # Texture drawing is commented out
-                # if item in self.textures:
-                #     self.textures[item].blit(x+4, y+4, width=32, height=32)
+                if item in self.textures:
+                    self.textures[item].blit(x+4, y+4, width=32, height=32)
+                else:
+                    # Fallback rendering
+                    graphics.draw(4, pyglet.gl.GL_QUADS,
+                        ('v2f', (x+4, y+4, x+36, y+4, x+36, y+36, x+4, y+36)),
+                        ('c3f', (0.8, 0.8, 0.8) * 4)
+                    )
                 pyglet.text.Label(str(count), x=x+34, y=y+2, color=(255, 255, 255, 255)).draw()
 
     def draw_full_inventory(self, window):
@@ -100,9 +112,14 @@ class Inventory:
             )
             if slot:
                 item, count = slot
-                # Texture drawing is commented out
-                # if item in self.textures:
-                #     self.textures[item].blit(x+4, y+4, width=32, height=32)
+                if item in self.textures:
+                    self.textures[item].blit(x+4, y+4, width=32, height=32)
+                else:
+                    # Fallback rendering
+                    graphics.draw(4, pyglet.gl.GL_QUADS,
+                        ('v2f', (x+4, y+4, x+36, y+4, x+36, y+36, x+4, y+36)),
+                        ('c3f', (0.8, 0.8, 0.8) * 4)
+                    )
                 pyglet.text.Label(str(count), x=x+34, y=y+2, color=(255, 255, 255, 255)).draw()
 
     def handle_click(self, x, y, button, modifiers):

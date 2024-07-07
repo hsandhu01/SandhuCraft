@@ -38,9 +38,9 @@ class Game(pyglet.window.Window):
         self.exclusive = False
         self.set_exclusive_mouse(self.exclusive)
         self.world = GameWorld()
-        self.player = Player(Vec3(0.5, 50.0, 0.5))
+        self.player = Player(Vec3(0.5, 150.0, 0.5))  # Increased Y value
         self.player.position[1] = self.world.get_height(self.player.position[0], self.player.position[2]) + 2
-        print(f"Player initial position: {self.player.position}")
+        print(f"Player initial position: {self.player.get_position()}")
         self.gui = GUI(self)
         self.mobs = []
         self.weather_system = WeatherSystem(self)
@@ -101,6 +101,8 @@ class Game(pyglet.window.Window):
         for mob in self.mobs:
             mob.update(dt, self.world, self.player)
         
+        self.world.ensure_chunks_around_player(self.player.position)
+        
         self.handle_mob_interactions()
         self.world.update_fluids()
         self.time_of_day = (self.time_of_day + dt / 300) % 1  # Full day/night cycle in 5 minutes
@@ -131,7 +133,15 @@ class Game(pyglet.window.Window):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
         
+        self.world.ensure_chunks_around_player(self.player.position)
         self.player.update_camera(self)
+        
+        # Debug rendering
+        gl.glColor3f(1, 0, 0)  # Red color
+        gl.glPointSize(10)
+        gl.glBegin(gl.GL_POINTS)
+        gl.glVertex3f(0, 0, 0)  # Origin point
+        gl.glEnd()
         
         self.world.draw()
         
@@ -154,8 +164,10 @@ class Game(pyglet.window.Window):
         gl.glLoadIdentity()
 
     def draw_player_info(self):
-        x, y, z = self.player.position
+        x, y, z = self.player.get_position()
         self.info_label.text = f"Player Position: ({x:.2f}, {y:.2f}, {z:.2f})"
+        self.info_label.text += f"\nChunks loaded: {len(self.world.chunks)}"
+        self.info_label.text += f"\nRendered vertices: {self.world.rendered_vertices}"
         self.info_label.draw()
 
     def save_game(self):
